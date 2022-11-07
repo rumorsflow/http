@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"sync"
+	"time"
 )
 
 const PluginName = "http"
@@ -22,6 +23,7 @@ type Plugin struct {
 	handlers *sync.Map
 	stop     chan struct{}
 	once     sync.Once
+	grace    time.Duration
 }
 
 type Middleware interface {
@@ -49,6 +51,7 @@ func (p *Plugin) Init(cfg config.Configurer, log *zap.Logger) error {
 	p.mdwr = new(sync.Map)
 	p.handlers = new(sync.Map)
 	p.stop = make(chan struct{}, 1)
+	p.grace = cfg.GracefulTimeout()
 
 	return nil
 }
@@ -115,7 +118,10 @@ func (p *Plugin) shutdown(errCh chan error) {
 	p.log.Info("HTTP server stopping")
 	defer p.log.Info("HTTP server stopped")
 
-	if err := p.srv.Shutdown(context.Background()); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), p.grace)
+	defer cancel()
+
+	if err := p.srv.Shutdown(ctx); err != nil {
 		errCh <- errors.E(op, errors.Stop, err)
 	}
 }
