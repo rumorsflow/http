@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"context"
 	"github.com/roadrunner-server/errors"
 	"github.com/rumorsflow/contracts/config"
 	"go.uber.org/zap"
@@ -16,6 +17,15 @@ const (
 
 type Plugin struct {
 	log *zap.Logger
+}
+
+type ctxKey struct{}
+
+func CtxLog(ctx context.Context) *zap.Logger {
+	if v, ok := ctx.Value(ctxKey{}).(*zap.Logger); ok {
+		return v
+	}
+	return nil
 }
 
 func (p *Plugin) Init(cfg config.Configurer, log *zap.Logger) error {
@@ -46,7 +56,7 @@ func (p *Plugin) Handle(next http.Handler) http.Handler {
 
 		ww := &wrapperResponseWriter{ResponseWriter: w}
 
-		next.ServeHTTP(ww, r)
+		next.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ctxKey{}, p.log)))
 
 		end := time.Now()
 		latency := end.Sub(start)
