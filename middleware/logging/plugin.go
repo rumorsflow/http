@@ -54,6 +54,10 @@ func (p *Plugin) Handle(next http.Handler) http.Handler {
 		query := r.URL.RawQuery
 		uri := r.URL.String()
 
+		if host == "" {
+			host = r.Host
+		}
+
 		ww := &wrapperResponseWriter{ResponseWriter: w}
 
 		next.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ctxKey{}, p.log)))

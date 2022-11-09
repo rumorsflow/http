@@ -20,8 +20,8 @@ func (p *Plugin) Name() string {
 
 func (p *Plugin) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if data := strings.Split(r.URL.Host, "."); len(data) == 2 {
-			r.URL.Host = "www." + r.URL.Host
+		if data := strings.Split(r.Host, "."); len(data) == 2 {
+			r.URL.Host = "www." + r.Host
 			w.Header().Set("Location", r.URL.String())
 			w.WriteHeader(http.StatusMovedPermanently)
 		}
