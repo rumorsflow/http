@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	DirCache          string        `mapstructure:"dir_cache"`
+	HostWhitelist     []string      `mapstructure:"host_whitelist"`
 	CertFile          string        `mapstructure:"cert_file"`
 	KeyFile           string        `mapstructure:"key_file"`
 	Address           string        `mapstructure:"address"`
@@ -33,17 +34,18 @@ func (cfg *Config) InitDefault() {
 }
 
 func (cfg *Config) IsTLS() bool {
-	return cfg.DirCache != "" || (cfg.CertFile != "" && cfg.KeyFile != "")
+	return (cfg.DirCache != "" && len(cfg.HostWhitelist) > 0) || (cfg.CertFile != "" && cfg.KeyFile != "")
 }
 
 func (cfg *Config) TLSConfig() *tls.Config {
 	if cfg.IsTLS() {
-		if cfg.DirCache == "" {
+		if cfg.DirCache == "" || len(cfg.HostWhitelist) == 0 {
 			return new(tls.Config)
 		} else {
 			autoTLSManager := autocert.Manager{
-				Prompt: autocert.AcceptTOS,
-				Cache:  autocert.DirCache(cfg.DirCache),
+				Prompt:     autocert.AcceptTOS,
+				HostPolicy: autocert.HostWhitelist(cfg.HostWhitelist...),
+				Cache:      autocert.DirCache(cfg.DirCache),
 			}
 
 			return &tls.Config{
