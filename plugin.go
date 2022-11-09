@@ -74,6 +74,10 @@ func (p *Plugin) Serve() chan error {
 			value.(Handler).Register(p.mux)
 			return true
 		})
+
+		for _, s := range p.cfg.Static {
+			p.mux.Handle(s.Pattern, http.FileServer(http.Dir(s.Dir)), s.Methods...)
+		}
 	})
 
 	go p.serve(errCh)
